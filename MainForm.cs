@@ -26,6 +26,8 @@ namespace FileConverterUltimateApp
         private readonly Label _backgroundLabel = new Label();
         private readonly Label _backgroundImageLabel = new Label();
         private readonly Button _convertButton = new Button();
+        private readonly Label _textOverlayLabel = new Label();
+        private readonly TextBox _textOverlayTextBox = new TextBox();
         private readonly TextBox _logTextBox = new TextBox();
         private readonly Label _statusLabel = new Label();
         private readonly ConversionService _conversionService = new ConversionService();
@@ -35,9 +37,9 @@ namespace FileConverterUltimateApp
         {
             Text = "File Converter Ultimate";
             Width = 920;
-            Height = 720;
+            Height = 790;
             StartPosition = FormStartPosition.CenterScreen;
-            MinimumSize = new System.Drawing.Size(860, 640);
+            MinimumSize = new System.Drawing.Size(860, 710);
 
             Font = new System.Drawing.Font("Segoe UI", 10F);
 
@@ -117,7 +119,7 @@ namespace FileConverterUltimateApp
             _backgroundComboBox.Items.AddRange(new object[]
             {
                 "None",
-                "Effects",
+                "Text overlay",
                 "Image"
             });
             _backgroundComboBox.SelectedIndex = 0;
@@ -141,28 +143,40 @@ namespace FileConverterUltimateApp
             _browseBackgroundButton.Click += BrowseBackgroundButton_Click;
             _browseBackgroundButton.TabIndex = 8;
 
+            _textOverlayLabel.Left = 20;
+            _textOverlayLabel.Top = 482;
+            _textOverlayLabel.Width = 300;
+            _textOverlayLabel.Text = "Large text overlay (optional with image)";
+
+            _textOverlayTextBox.Left = 20;
+            _textOverlayTextBox.Top = 506;
+            _textOverlayTextBox.Width = 680;
+            _textOverlayTextBox.AccessibleName = "Large text overlay";
+            _textOverlayTextBox.AccessibleDescription = "Optional large text placed over the MP4 video or selected background image.";
+            _textOverlayTextBox.TabIndex = 9;
+
             _convertButton.Left = 20;
-            _convertButton.Top = 492;
+            _convertButton.Top = 558;
             _convertButton.Width = 180;
             _convertButton.Height = 36;
             _convertButton.Text = "Convert";
             _convertButton.Click += ConvertButton_Click;
-            _convertButton.TabIndex = 9;
+            _convertButton.TabIndex = 10;
 
             _statusLabel.Left = 220;
-            _statusLabel.Top = 500;
+            _statusLabel.Top = 566;
             _statusLabel.Width = 620;
             _statusLabel.Text = "Ready";
 
-            Label logLabel = new Label { Left = 20, Top = 550, Width = 200, Text = "Status log" };
+            Label logLabel = new Label { Left = 20, Top = 616, Width = 200, Text = "Status log" };
             _logTextBox.Left = 20;
-            _logTextBox.Top = 574;
+            _logTextBox.Top = 640;
             _logTextBox.Width = 820;
             _logTextBox.Height = 72;
             _logTextBox.Multiline = true;
             _logTextBox.ScrollBars = ScrollBars.Vertical;
             _logTextBox.ReadOnly = true;
-            _logTextBox.TabIndex = 10;
+            _logTextBox.TabIndex = 11;
 
             Controls.Add(titleLabel);
             Controls.Add(helpLabel);
@@ -180,6 +194,8 @@ namespace FileConverterUltimateApp
             Controls.Add(_backgroundImageLabel);
             Controls.Add(_backgroundImageTextBox);
             Controls.Add(_browseBackgroundButton);
+            Controls.Add(_textOverlayLabel);
+            Controls.Add(_textOverlayTextBox);
             Controls.Add(_convertButton);
             Controls.Add(_statusLabel);
             Controls.Add(logLabel);
@@ -256,6 +272,8 @@ namespace FileConverterUltimateApp
             _backgroundImageTextBox.Visible = showBackground;
             _browseBackgroundButton.Visible = showBackground;
 
+            _textOverlayLabel.Visible = showBackground;
+            _textOverlayTextBox.Visible = showBackground;
             BackgroundComboBox_SelectedIndexChanged(sender, e);
         }
 
@@ -283,7 +301,8 @@ namespace FileConverterUltimateApp
                     OutputDirectory = _outputTextBox.Text.Trim(),
                     IsZipBatch = string.Equals(Path.GetExtension(_inputTextBox.Text.Trim()), ".zip", StringComparison.OrdinalIgnoreCase),
                     BackgroundMode = Convert.ToString(_backgroundComboBox.SelectedItem).ToLowerInvariant(),
-                    BackgroundImagePath = _backgroundImageTextBox.Text.Trim()
+                    BackgroundImagePath = _backgroundImageTextBox.Text.Trim(),
+                    TextOverlay = _textOverlayTextBox.Text.Trim()
                 };
 
                 Directory.CreateDirectory(request.OutputDirectory);
@@ -343,6 +362,13 @@ namespace FileConverterUltimateApp
             {
                 throw new InvalidOperationException("Choose a background image.");
             }
+            if (_backgroundComboBox.Visible &&
+                string.Equals(Convert.ToString(_backgroundComboBox.SelectedItem), "Text overlay", StringComparison.OrdinalIgnoreCase) &&
+                string.IsNullOrWhiteSpace(_textOverlayTextBox.Text))
+            {
+                throw new InvalidOperationException("Type the text you want to place over the video.");
+            }
+
         }
 
         private void ToggleUi(bool ready)
@@ -355,6 +381,9 @@ namespace FileConverterUltimateApp
             _browseOutputButton.Enabled = ready;
             _backgroundComboBox.Enabled = ready;
             _convertButton.Enabled = ready;
+            _backgroundImageTextBox.Enabled = ready && string.Equals(Convert.ToString(_backgroundComboBox.SelectedItem), "Image", StringComparison.OrdinalIgnoreCase);
+            _browseBackgroundButton.Enabled = ready && string.Equals(Convert.ToString(_backgroundComboBox.SelectedItem), "Image", StringComparison.OrdinalIgnoreCase);
+            _textOverlayTextBox.Enabled = ready;
         }
 
         private void EnsureDefaultOutputFolder()
