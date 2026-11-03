@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading;
 
 namespace FileConverterUltimateApp
 {
@@ -30,6 +31,12 @@ namespace FileConverterUltimateApp
 
         private static void SaveDocument(string inputPath, string outputPath, int format)
         {
+            if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
+            {
+                RunInSta(() => SaveDocument(inputPath, outputPath, format));
+                return;
+            }
+
             Type wordType = Type.GetTypeFromProgID("Word.Application");
             if (wordType == null)
             {
@@ -50,6 +57,10 @@ namespace FileConverterUltimateApp
                 saveArguments[0] = outputPath;
                 saveArguments[1] = format;
                 document.GetType().InvokeMember("SaveAs2", System.Reflection.BindingFlags.InvokeMethod, null, document, saveArguments);
+            }
+            catch (System.Reflection.TargetInvocationException ex) when (ex.InnerException != null)
+            {
+                throw new InvalidOperationException("Microsoft Word could not convert this document: " + ex.InnerException.Message, ex.InnerException);
             }
             finally
             {
@@ -83,6 +94,24 @@ namespace FileConverterUltimateApp
 
                     System.Runtime.InteropServices.Marshal.FinalReleaseComObject(application);
                 }
+            }
+        }
+
+        private static void RunInSta(Action action)
+        {
+            Exception error = null;
+            Thread worker = new Thread(() =>
+            {
+                try { action(); }
+                catch (Exception ex) { error = ex; }
+            });
+            worker.SetApartmentState(ApartmentState.STA);
+            worker.Start();
+            worker.Join();
+
+            if (error != null)
+            {
+                throw new InvalidOperationException(error.Message, error);
             }
         }
 
