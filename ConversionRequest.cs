@@ -1,4 +1,4 @@
-namespace FileConverterUltimateApp
+        namespace FileConverterUltimateApp
 {
     internal sealed class ConversionRequest
     {
@@ -8,6 +8,8 @@ namespace FileConverterUltimateApp
         public bool IsZipBatch { get; set; }
         public string ExtractedRootDirectory { get; set; }
         public string BackgroundMode { get; set; }
-        public string BackgroundImagePath { get; set; }
+            public string BackgroundImagePath { get; set; }
+        public string TextOverlay { get; set; }
     }
 }
+        
