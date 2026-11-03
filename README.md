@@ -1,12 +1,12 @@
 # File Converter Ultimate
 
-File Converter Ultimate is an accessible Windows desktop app for converting audio, video, image, text, and document files.
+File Converter Ultimate is an accessible Windows desktop app for converting audio, video, image, text, and document files. If you don't want to spend time on the internet on file conversion sites, getting redirected to potentially harmful websites, and you want great file conversion options, File Converter Ultimate is for you. It supports old files like voc and kwb conversions.
 
 ## What it does
 
 - Shows a list of conversion choices as soon as the app opens.
 - Lets you convert a single file or a whole ZIP archive of files.
-- Reveals background options only when you choose an audio-to-MP4 conversion.
+- Reveals background options and text overlay only when you choose an audio-to-MP4 conversion.
 - Tries to stay screen-reader friendly with labeled controls, simple tab order, and plain status updates.
 
 ## Notes
@@ -29,4 +29,4 @@ The app will use these bundled tools first, then fall back to system-wide instal
 
 ## Output
 
-Converted files are saved into the output folder you choose in the app.
+Converted files are saved into the output folder you choose in the app (e.g. "C:\Users\you're name \Documents\File Converter Ultimate Output"). It saves in documents by default.
