@@ -824,5 +824,5 @@ namespace FileConverterUltimateApp
         {
             return "\"" + path + "\"";
         }
-}                        
+    }
 }
