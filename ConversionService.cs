@@ -365,8 +365,18 @@ namespace FileConverterUltimateApp
         {
             if (WordAutomation.IsAvailable())
             {
-                WordAutomation.SaveAsPdf(inputPath, outputPath);
-                return;
+                try
+                {
+                    WordAutomation.SaveAsPdf(inputPath, outputPath);
+                    return;
+                }
+                catch when (Path.GetExtension(inputPath).Equals(".docx", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Preserve the document's text in a PDF if Word rejects this otherwise valid DOCX.
+                    string text = WordAutomation.ExtractDocxText(inputPath);
+                    PdfWriter.WriteTextPdf(outputPath, Path.GetFileNameWithoutExtension(inputPath), text);
+                    return;
+                }
             }
 
             if (Path.GetExtension(inputPath).Equals(".docx", StringComparison.OrdinalIgnoreCase))
@@ -391,23 +401,32 @@ namespace FileConverterUltimateApp
         private static void ConvertAudioToVideo(string inputPath, string outputPath, ConversionRequest request)
         {
             string ffmpegPath = RequireDependency(DependencyLocator.FindFfmpeg(), "FFmpeg is required for audio to video conversions.");
-            string imageInput = string.Empty;
-            string filter = "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p";
-            string arguments;
-
-            if (string.Equals(request.BackgroundMode, "image", StringComparison.OrdinalIgnoreCase) &&
-                !string.IsNullOrWhiteSpace(request.BackgroundImagePath))
-            {
-                imageInput = " -loop 1 -i " + Quote(request.BackgroundImagePath);
-                arguments = "-loglevel error -nostats -y -i " + Quote(inputPath) + imageInput + " -filter_complex \"[1:v]" + filter + "[bg]\" -map 0:a -map \"[bg]\" -shortest -c:v libx264 -preset veryfast -c:a aac -b:a 192k " + Quote(outputPath);
-            }
-            else
-            {
-                string color = string.Equals(request.BackgroundMode, "effects", StringComparison.OrdinalIgnoreCase) ? "0x16213E" : "0x1B1B1B";
-                arguments = "-loglevel error -nostats -y -i " + Quote(inputPath) + " -f lavfi -i color=c=" + color + ":s=1280x720:d=1 -filter_complex \"[1:v]format=yuv420p,drawtext=text='File Converter Ultimate':fontcolor=white:fontsize=42:x=(w-text_w)/2:y=(h-text_h)/2\" -map 0:a -map 1:v -shortest -c:v libx264 -preset veryfast -c:a aac -b:a 192k " + Quote(outputPath);
-            }
+            string imageFilter = "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p";
+            bool hasImage = string.Equals(request.BackgroundMode, "image", StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(request.BackgroundImagePath);
+            bool hasText = !string.IsNullOrWhiteSpace(request.TextOverlay);
+            string videoInput = hasImage
+                ? " -loop 1 -i " + Quote(request.BackgroundImagePath)
+                : " -f lavfi -i color=c=0x1B1B1B:s=1280x720:r=30";
+            string source = hasImage ? "[1:v]" + imageFilter : "[1:v]format=yuv420p";
+            string overlay = hasText
+                ? ",drawtext=text='" + EscapeDrawText(request.TextOverlay) + "':fontcolor=white:fontsize=72:borderw=4:bordercolor=black:x=(w-text_w)/2:y=(h-text_h)/2"
+                : string.Empty;
+            string arguments = "-loglevel error -nostats -y -i " + Quote(inputPath) + videoInput +
+                " -filter_complex \"" + source + overlay + "[video]\" -map 0:a -map \"[video]\" -shortest -c:v libx264 -preset veryfast -c:a aac -b:a 192k " + Quote(outputPath);
 
             RunProcess(ffmpegPath, arguments, "Audio to MP4 conversion failed.");
+        }
+
+        private static string EscapeDrawText(string value)
+        {
+            return (value ?? string.Empty)
+                .Replace("\\", "\\\\")
+                .Replace("'", "\\'")
+                .Replace(":", "\\:")
+                .Replace("%", "\\%")
+                .Replace("\r", string.Empty)
+                .Replace("\n", "\\n");
         }
 
         private static void ConvertWithFfmpeg(string inputPath, string outputPath, string outputExtension, Action<string> log)
@@ -805,5 +824,5 @@ namespace FileConverterUltimateApp
         {
             return "\"" + path + "\"";
         }
-    }
+}                        
 }
